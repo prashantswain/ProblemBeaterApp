@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  WalkthroughScreen.swift
 //  ProblemBeater
 //
 //  Created by Prashant Swain on 28/05/25.
@@ -7,33 +7,11 @@
 
 import SwiftUI
 
-struct OnboardPageDetail {
-    let title: String
-    let description: String
-    let iamge: String
-}
-
-enum OnboardingPage: Int, CaseIterable {
-    case page1
-    case page2
-    case page3
-    
-    var detail: OnboardPageDetail {
-        switch self {
-        case .page1:
-            return OnboardPageDetail(title: "Learn at Your Pace", description: "Personalized lessons designed to match your learning speed - whether you're revising basics or mastering new concepts.", iamge: "function")
-        case .page2:
-            return OnboardPageDetail(title: "Track Your Progress", description: "Set goals, earn achievements, and watch your skills grow with detailed insights into your learning journey.", iamge: "compass.drawing")
-        case .page3:
-            return OnboardPageDetail(title: "Interactive & Engaging", description: "Boost retention with quizzes, videos, and challenges that make learning fun and effective.", iamge: "x.squareroot")
-        }
-    }
-}
-
-struct ContentView: View {
-    
+struct WalkthroughScreen: View {
+    @EnvironmentObject var navManager: NavigationManager
     @State private var isAnimating = false
     @State private var currntPage = 0
+    @State private var showLogin = false
     var body: some View {
         VStack {
             TabView(selection: $currntPage) {
@@ -47,7 +25,7 @@ struct ContentView: View {
             HStack(spacing: 12) {
                 ForEach(0..<OnboardingPage.allCases.count, id: \.self) { index in
                     Circle()
-                        .fill(currntPage == index ? Color.blue : Color.gray.opacity(0.5))
+                        .fill(currntPage == index ? appColor : Color.gray.opacity(0.5))
                         .frame(width: currntPage == index ? 12 : 8, height: currntPage == index ? 12 : 8, alignment: .center)
                         .animation(.spring(), value: currntPage)
                 }
@@ -58,7 +36,11 @@ struct ContentView: View {
                     if currntPage < OnboardingPage.allCases.count - 1 {
                         currntPage += 1
                     } else {
+                        appUserDefault.isAppInstalled = true
                         // Navigate to Login Screen
+                        Task {
+                            await navManager.goToLogin()
+                        }
                     }
                 }
             } label: {
@@ -68,7 +50,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
                     .padding(16)
                     .background(
-                        LinearGradient(colors: [Color.blue, Color.blue.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
+                        LinearGradient(colors: [appColor1, appColor2.opacity(0.6) , appColor3.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
@@ -77,6 +59,7 @@ struct ContentView: View {
             .padding(.horizontal, 30)
             .padding(.bottom, 30)
         }
+        .navigationBarHidden(true)
         .onAppear {
             isAnimating = true
         }
@@ -91,7 +74,7 @@ struct ContentView: View {
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(
-                        LinearGradient(colors: [.pink, .black.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                        LinearGradient(colors: [appColor1, appColor2.opacity(0.6) , appColor3.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
                     )
                     .padding()
                 Spacer()
@@ -124,5 +107,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    WalkthroughScreen()
 }

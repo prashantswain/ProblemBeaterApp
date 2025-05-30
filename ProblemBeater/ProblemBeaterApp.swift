@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct ProblemBeaterApp: App {
+    @StateObject var navManager: NavigationManager = NavigationManager()
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(navManager)
         }
     }
 }
