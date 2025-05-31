@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 
 class ServiceManager {
-    @EnvironmentObject var navManager: NavigationManager
     static let shared = ServiceManager()
     private init() {}
     
@@ -65,7 +64,7 @@ class ServiceManager {
             do {
                 let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
                 if statusCode == 401 {
-                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
                     return
                 }
@@ -96,7 +95,7 @@ class ServiceManager {
             let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
             if statusCode == 401 {
                 Task{
-                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                 }
                 return (nil, .authenticationFailed)
             }
@@ -127,7 +126,7 @@ class ServiceManager {
             do {
                 let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: body, responseType: T.self)
                 if statusCode == 401 {
-                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
                     return
                 }
@@ -165,7 +164,7 @@ class ServiceManager {
             do {
                 let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: bodyData, responseType: T.self)
                 if statusCode == 401 {
-                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
                     return
                 }
@@ -266,78 +265,5 @@ class ServiceManager {
         body.append("--\(boundary)--\(lineBreak)")
         return body
     }
-    
-//    //MARK:- Func for Create Body for multipart Api to append Video and images
-//    func createBody(parameters: [String: Any?], boundary: String, mimeType: String) throws -> Data {
-//        var body = Data()
-//        for (key, value) in parameters {
-//            if(value is String || value is NSString) {
-//                body.append("--\(boundary)\r\n")
-//                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
-//                body.append("\(value ?? "")\r\n")
-//            } else if let imagValue = value as? UIImage {
-//                let r = arc4random()
-//                let filename = "image\(r).jpg" //MARK:  put your imagename in key
-//                let data: Data = imagValue.jpegData(compressionQuality: 0.5)!
-//                body.append("--\(boundary)\r\n")
-//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-//                body.append("Content-Type: \(mimeType)\r\n\r\n")
-//                body.append(data)
-//                body.append("\r\n")
-//            }else if value is [String: String] {
-//                var body1 = Data()
-//                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
-//                for (keyy, valuee) in (value as? [String: String])! {
-//                    body1.append("--\(boundary)\r\n")
-//                    body1.append("Content-Disposition: form-data; name=\"\(keyy)\"\r\n\r\n")
-//                    body1.append("\(valuee)\r\n")
-//                }
-//                body.append(body1)
-//            } else if let dataValue = value as? URL {
-//                let r = arc4random()
-//                let filename = "\(r).pdf" //MARK:  put your imagename in key
-//                let data: Data = try! Data(contentsOf: dataValue)
-//                body.append("--\(boundary)\r\n")
-//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-//                body.append("Content-Type: \(mimeType)\r\n\r\n")
-//                body.append(data)
-//                body.append("\r\n")
-//                
-//            } else if let images = value as? [UIImage] {
-//                for image in images {
-//                    let r = arc4random()
-//                    let filename = "image\(r).jpg" //MARK:  put your imagename in key
-//                    let data: Data = image.jpegData(compressionQuality: 0.5)!
-//                    body.append("--\(boundary)\r\n")
-//                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-//                    body.append("Content-Type: \(mimeType)\r\n\r\n")
-//                    body.append(data)
-//                    body.append("\r\n")
-//                }
-//            }else if let videoData = value as? Data { //MARK:  it is Used for Video and pdf send to the server
-//                let r = arc4random()
-//                let filename = "\(key)\(r).mov" //MARK:  Put you image Name in key
-//                let data : Data = videoData
-//                body.append("--\(boundary)\r\n")
-//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-//                body.append("Content-Type: \(mimeType)\r\n\r\n")
-//                body.append(data)
-//                body.append("\r\n")
-//            } else if let multipleData = value as? [Data] { //MARK:  It is used for Multiple Data to api
-//                for filedata in multipleData {
-//                    let r = arc4random()
-//                    let filename = "\(key)\(r).mov" //MARK:-  put your imagename in key
-//                    let data: Data = filedata
-//                    body.append("--\(boundary)\r\n")
-//                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-//                    body.append("Content-Type: \(mimeType)\r\n\r\n")
-//                    body.append(data)
-//                    body.append("\r\n")
-//                }
-//            }
-//        }
-//        body.append("--\(boundary)--\r\n")
-//        return body
-//    }
     
 }

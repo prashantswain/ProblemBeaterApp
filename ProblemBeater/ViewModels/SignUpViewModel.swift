@@ -99,14 +99,14 @@ class SignUpViewModel: ObservableObject {
         isLoading = true
         defer {isLoading = false}
         let parameters : [String : Any] = [
-            "name": "Bhupesh2",
-            "emailID": "bhupesh2@gmail.com",
-            "mobileNumber": "9876545678",
-            "age": "23",
-            "gender": "Male",
-            "password": "12345678",
-            "classId": "4",
-            "profile_picture": UIImage(systemName: "person.circle")!
+            ApiParameter.name.key: "Bhupesh2",
+            ApiParameter.email.key: "bhupesh2@gmail.com",
+            ApiParameter.mobile.key: "9876545678",
+            ApiParameter.age.key: "23",
+            ApiParameter.gender.key: "Male",
+            ApiParameter.password.key: "12345678",
+            ApiParameter.classId.key: "4",
+            ApiParameter.profilePic.key: UIImage(systemName: "person.circle")!
         ]
         
         ServiceManager.shared.postMultipartRequest(endpoint: .signUp, requestParameter: parameters) { (result: Result<SignUpResponse, APIError>) in

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeScreen: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var userDetail: SharedUserDetail
     @ObservedObject var viewModel = HomeScreenViewModel()
     @State var showLoginSuccessToast = false
     var body: some View {
@@ -28,7 +29,7 @@ struct HomeScreen: View {
         .onChange(of: viewModel.logoutSucess) { oldValue, newValue in
             if newValue {
                 navManager.logout()
-                appUserDefault.isUserLoggedIn = false
+                userDetail.isUserLoggedIn = false
             }
         }
         .onAppear{

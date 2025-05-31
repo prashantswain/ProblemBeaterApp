@@ -9,6 +9,7 @@ import SwiftUI
 
 struct WalkthroughScreen: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var userDetail: SharedUserDetail
     @State private var isAnimating = false
     @State private var currntPage = 0
     @State private var showLogin = false
@@ -36,7 +37,7 @@ struct WalkthroughScreen: View {
                     if currntPage < OnboardingPage.allCases.count - 1 {
                         currntPage += 1
                     } else {
-                        appUserDefault.isAppInstalled = true
+                        userDetail.isAppInstalled = true
                         // Navigate to Login Screen
                         Task {
                             await navManager.goToLogin(showToastMessage: false, message: "")

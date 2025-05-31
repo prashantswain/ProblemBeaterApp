@@ -22,6 +22,7 @@ struct ContentView: View {
                 }
             }
             .onAppear {
+                appUserDefault.navManager = navManager
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                     showSplash = false
                     navManager.navigateToRoot()

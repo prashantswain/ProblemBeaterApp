@@ -10,7 +10,7 @@ class AppUserDefault {
     static let shared = AppUserDefault()
     
     private init () {}
-    
+    var navManager: NavigationManager?
     @AppStorage("appInstalled") var isAppInstalled: Bool = false
     @AppStorage("userLoggedIn") var isUserLoggedIn: Bool = false
     @AppStorage("accessToken") var accessToken: String = ""

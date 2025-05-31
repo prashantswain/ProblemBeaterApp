@@ -47,7 +47,7 @@ class LoginViewModel: ObservableObject {
         isLoading = true
         defer {isLoading = false}
         guard ValidationField() else { return }
-        let requestParameter = LoginRequest(username: "bhupesh2@gmail.com", password: "12345678")
+        let requestParameter = LoginRequest(username: "bhupesh2@gmail.com", password: "87654321@Abc")
         ServiceManager.shared.postRequest(endpoint: .login, requestParameter: requestParameter) { (result: Result<LoginResponse, APIError>) in
             switch result {
             case .success(let loginResponse):

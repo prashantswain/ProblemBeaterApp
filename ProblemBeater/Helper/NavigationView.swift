@@ -16,7 +16,6 @@ enum NavigationScreen: Hashable {
 
 @MainActor
 class NavigationManager: ObservableObject {
-    @EnvironmentObject var userDetail: SharedUserDetail
     @Published var path = NavigationPath()
     
     func goToHome(showWelcomeAlert: Bool = false) async {

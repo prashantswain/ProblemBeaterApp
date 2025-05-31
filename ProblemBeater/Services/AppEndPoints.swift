@@ -92,3 +92,19 @@ enum EndPoint: EndPointConfig {
         return "http://localhost:8000//v1/problem_beater/"
     }
 }
+
+enum ApiParameter: String {
+    case name = "name"
+    case email = "emailID"
+    case mobile = "mobileNumber"
+    case age = "age"
+    case gender = "gender"
+    case password = "password"
+    case classId = "classId"
+    case profilePic = "profile_picture"
+    
+    
+    var key: String {
+        return self.rawValue
+    }
+}
