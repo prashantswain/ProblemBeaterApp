@@ -39,7 +39,7 @@ struct WalkthroughScreen: View {
                         appUserDefault.isAppInstalled = true
                         // Navigate to Login Screen
                         Task {
-                            await navManager.goToLogin()
+                            await navManager.goToLogin(showToastMessage: false, message: "")
                         }
                     }
                 }

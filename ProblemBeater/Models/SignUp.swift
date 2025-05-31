@@ -23,9 +23,21 @@ struct ClassesResponse: Decodable {
 }
 
 // MARK: - Single Class Item
-struct ClassItem: Decodable, Identifiable {
+struct ClassItem: Codable, Identifiable {
     let id: Int
-    let createdAt: String
+    let createdAt: String?
     let updatedAt: String?
     let name: String
+}
+
+
+// MARK: - SignUpResponse
+struct SignUpResponse: Decodable {
+    let data: UserData
+    let message: String
+
+    enum CodingKeys: String, CodingKey {
+        case data
+        case message = "mesaage" // Fix typo from backend
+    }
 }

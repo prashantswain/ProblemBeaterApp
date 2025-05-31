@@ -9,15 +9,8 @@ import SwiftUI
 
 struct RegistrationView: View {
     @EnvironmentObject var navManager: NavigationManager
-    @State private var name: String = ""
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var confirmPassword: String = ""
-    @State private var age: String = ""
-    @State private var selectedGender: String = ""
-    @State private var selectedClass: String = ""
     @State private var showImagePicker = false
-    @State private var selectedImage: UIImage?
+    @FocusState private var isFocused: Bool
     
     @ObservedObject var viewModel = SignUpViewModel()
     var body: some View {
@@ -32,7 +25,7 @@ struct RegistrationView: View {
                             Spacer()
                             ZStack(alignment: .bottomTrailing) {
                                 Group {
-                                    if let image = selectedImage{
+                                    if let image = viewModel.selectedImage{
                                         Image(uiImage: image)
                                             .resizable()
                                     } else {
@@ -64,14 +57,25 @@ struct RegistrationView: View {
                             .bold()
                         // TextField
                         VStack(spacing: 16) {
-                            TextFieldWithImage(placeHolderText: "Name", text: $name)
-                            TextFieldWithImage(placeHolderText: "Email", text: $email, showIcon: true, iconName: "envelope.fill")
-                            TextFieldWithImage(placeHolderText: "Mobile Number", text: $email, showIcon: true, iconName: "envelope.fill")
-                            CustomSecureTextField(placeHolderText: "Password", text: $password)
-                            CustomSecureTextField(placeHolderText: "Confirm Password", text: $confirmPassword)
-                            CustomPickerView(placeHolderText: "Gender", dataSources: genders, text: $selectedGender, showIcon: true, iconName: "figure.stand.dress.line.vertical.figure")
-                            TextFieldWithImage(placeHolderText: "Age", text: $age)
-                            CustomPickerView(placeHolderText: "Class", dataSources: viewModel.classes?.map{$0.name} ?? ["", ""], text: $selectedClass, showIcon: true, iconName: "figure.stand.dress.line.vertical.figure")
+                            TextFieldWithImage(placeHolderText: "Name", text: $viewModel.name)
+                            TextFieldWithImage(placeHolderText: "Email", text: $viewModel.email, showIcon: true, iconName: "envelope.fill")
+                            TextFieldWithImage(placeHolderText: "Mobile Number", text: $viewModel.mobile, showIcon: true, iconName: "phone.fill")
+                                .keyboardType(.phonePad)
+                            CustomSecureTextField(placeHolderText: "Password", text: $viewModel.password)
+                            CustomSecureTextField(placeHolderText: "Confirm Password", text: $viewModel.confirmPassword)
+                            CustomPickerView(placeHolderText: "Gender", dataSources: genders, text: $viewModel.selectedGender, showIcon: true, iconName: "figure.stand.dress.line.vertical.figure")
+                            TextFieldWithImage(placeHolderText: "Age", text: $viewModel.age)
+                                .keyboardType(.numberPad)
+                                .focused($isFocused)
+                                .toolbar {
+                                    ToolbarItemGroup(placement: .keyboard) {
+                                        Spacer()
+                                        Button("Done") {
+                                            isFocused = false // dismiss keyboard
+                                        }
+                                    }
+                                }
+                            CustomPickerView(placeHolderText: "Class", dataSources: viewModel.classes?.map{$0.name} ?? ["", ""], text: $viewModel.selectedClass, showIcon: true, iconName: "graduationcap.fill")
                             HStack {
                                 Text("Already have an account?")
                                     .font(.system(size: 16, design: .rounded))
@@ -91,8 +95,10 @@ struct RegistrationView: View {
                         }
                         AppButton(text: "Sign Up") {
                             Task {
-                                await viewModel.fetchData()
-                                await navManager.goToLogin()
+                                await viewModel.signUp()
+                                if viewModel.loginSuccess {
+                                    await navManager.goToLogin(showToastMessage: true, message: "Registration Successful! Login to start you Journey")
+                                }
                             }
                         }
                         .padding(.top, 30)
@@ -102,14 +108,21 @@ struct RegistrationView: View {
                 }
             }
             .sheet(isPresented: $showImagePicker) {
-                ImagePicker(selectedImage: $selectedImage)
+                ImagePicker(selectedImage: $viewModel.selectedImage)
             }
             .scrollIndicators(.hidden)
         }
         .spinnerOverlay(isLoading: viewModel.isLoading)
         .navigationBarHidden(true)
         .task {
-            await viewModel.fetchClasses()
+            viewModel.fetClasses()
+        }
+        .alert(isPresented: $viewModel.showError) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage ?? ""),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 }

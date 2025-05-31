@@ -8,45 +8,40 @@
 import Foundation
 import SwiftUI
 
-//MARK:- Extension of Data For Apped String
-extension Data {
-    mutating func append(_ string: String) {
-        if let data = string.data(using: .utf8) {
-            append(data)
-        }
-    }
-}
-
 class ServiceManager {
+    @EnvironmentObject var navManager: NavigationManager
     static let shared = ServiceManager()
     private init() {}
     
-    func request<T: Decodable>(
+    private func request<T: Decodable>(
         url: URL?,
         method: String = "GET",
         headers: [String: String]? = nil,
         body: Data? = nil,
         responseType: T.Type
-    ) async throws -> T {
+    ) async throws -> (data: T?, statusCode: Int) {
         guard let url = url else {
             throw APIError.invalidURL
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
         request.allHTTPHeaderFields = headers
-
+        
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            
             guard let httpResponse = response as? HTTPURLResponse,
-                  200..<300 ~= httpResponse.statusCode else {
+                  200..<300 ~= httpResponse.statusCode  else {
                 throw APIError.invalidResponse
             }
             
+            if httpResponse.statusCode == 401 {
+                return (nil, httpResponse.statusCode)
+            }
+            
             do {
-                return try JSONDecoder().decode(T.self, from: data)
+                return  (try JSONDecoder().decode(T.self, from: data), httpResponse.statusCode)
             } catch {
                 throw APIError.decodingError(error)
             }
@@ -54,82 +49,295 @@ class ServiceManager {
             throw APIError.requestFailed(error)
         }
     }
+    
+    
+    
+    // Get Api with CompletionHandler
+    func getRequest<T: Decodable>(endpoint: EndPoint,completionHandler: @escaping (Result<T, APIError>) -> Void) {
+        // Get all Data for request parameter
+        let headers = [
+            ContentType.accessToken.rawValue: endpoint.accessToken,
+            ContentType.type.rawValue: ContentType.applicationJson.rawValue
+        ]
+        let method :httpMethod = .get
 
+        Task {
+            do {
+                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
+                if statusCode == 401 {
+                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    completionHandler(.failure(.authenticationFailed))
+                    return
+                }
+                else {
+                    guard let data else {
+                        completionHandler(.failure(.customError("Data unwrapping failed")))
+                        return
+                    }
+                    completionHandler(.success(data))
+                }
+            } catch let apiError as APIError {
+                completionHandler(.failure(apiError))
+            } catch {
+                completionHandler(.failure(.customError("Unexpected error: \(error.localizedDescription)")))
+            }
+        }
+    }
     
+    // Get Api with Async
+    func getRequest<T: Decodable>(endpoint: EndPoint) async -> (T?, APIError?) {
+        // Get all Data for request parameter
+        let headers = [
+            ContentType.accessToken.rawValue: endpoint.accessToken,
+            ContentType.type.rawValue: ContentType.applicationJson.rawValue
+        ]
+        let method :httpMethod = .get
+        do {
+            let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
+            if statusCode == 401 {
+                Task{
+                    await navManager.goToLogin(showToastMessage: false, message: "")
+                }
+                return (nil, .authenticationFailed)
+            }
+            else {
+                return (data, nil)
+            }
+        } catch let apiError as APIError {
+            return (nil, apiError)
+        } catch {
+            return (nil, .customError("Unexpected error: \(error.localizedDescription)"))
+        }
+    }
     
+    // Get Api with CompletionHandler
+    func postRequest<T: Decodable>(endpoint: EndPoint, requestParameter: Encodable? = nil, completionHandler: @escaping (Result<T, APIError>) -> Void) {
+        // Get all Data for request parameter
+        guard let body = requestParameter?.toJSONData() else {
+            print("Encoding failed")
+            return
+        }
+        let headers = [
+            ContentType.accessToken.rawValue: endpoint.accessToken,
+            ContentType.type.rawValue: ContentType.applicationJson.rawValue
+        ]
+        let method :httpMethod = .post
+
+        Task {
+            do {
+                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: body, responseType: T.self)
+                if statusCode == 401 {
+                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    completionHandler(.failure(.authenticationFailed))
+                    return
+                }
+                else {
+                    guard let data else {
+                        completionHandler(.failure(.customError("Data unwrapping failed")))
+                        return
+                    }
+                    completionHandler(.success(data))
+                }
+            } catch let apiError as APIError {
+                completionHandler(.failure(apiError))
+            } catch {
+                completionHandler(.failure(.customError("Unexpected error: \(error.localizedDescription)")))
+            }
+        }
+    }
+    
+    // Get Api with CompletionHandler
+    func postMultipartRequest<T: Decodable>(endpoint: EndPoint, requestParameter: [String: Any?], completionHandler: @escaping (Result<T, APIError>) -> Void) {
+    
+        var headers = [
+            ContentType.accessToken.rawValue: endpoint.accessToken,
+        ]
+        let method :httpMethod = .post
+        let boundary =  "Boundary-\(UUID().uuidString)"
+        headers[ContentType.type.rawValue] = "multipart/form-data; boundary=\(boundary)"
+        var bodyData: Data?
+        do {
+            bodyData = try createBody(parameters: requestParameter, boundary: boundary, mimeType: "image/jpeg/png/jpg/docx/doc/mp4/mov/movie")
+        } catch {
+            completionHandler(.failure(.customError("Unable to create multipart data body: \(error.localizedDescription)")))
+        }
+        Task {
+            do {
+                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: bodyData, responseType: T.self)
+                if statusCode == 401 {
+                    await navManager.goToLogin(showToastMessage: false, message: "")
+                    completionHandler(.failure(.authenticationFailed))
+                    return
+                }
+                else {
+                    guard let data else {
+                        completionHandler(.failure(.customError("Data unwrapping failed")))
+                        return
+                    }
+                    completionHandler(.success(data))
+                }
+            } catch let apiError as APIError {
+                completionHandler(.failure(apiError))
+            } catch {
+                completionHandler(.failure(.customError("Unexpected error: \(error.localizedDescription)")))
+            }
+        }
+    }
     
     //MARK:- Func for Create Body for multipart Api to append Video and images
     func createBody(parameters: [String: Any?], boundary: String, mimeType: String) throws -> Data {
         var body = Data()
+        let lineBreak = "\r\n"
+        let fromData = "Content-Disposition: form-data"
+        let nameKeyField = "name="
+        let fileNameField = "filename="
+        let type = "Content-Type"
+        
         for (key, value) in parameters {
             if(value is String || value is NSString) {
-                body.append("--\(boundary)\r\n")
-                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
-                body.append("\(value ?? "")\r\n")
+                body.append("--\(boundary)\(lineBreak)")
+                body.append("\(fromData); \(nameKeyField)\"\(key)\"\(lineBreak + lineBreak)")
+                body.append("\(value ?? "")\(lineBreak)")
             } else if let imagValue = value as? UIImage {
                 let r = arc4random()
                 let filename = "image\(r).jpg" //MARK:  put your imagename in key
-                let data: Data = imagValue.jpegData(compressionQuality: 0.5)!
+                guard let data = imagValue.jpegData(compressionQuality: 0.5) else {
+                    throw NSError(domain: "ImageConversion", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to convert UIImage to Data"])
+                }
                 body.append("--\(boundary)\r\n")
-                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-                body.append("Content-Type: \(mimeType)\r\n\r\n")
+                body.append("\(fromData); \(nameKeyField)\"\(key)\"; \(fileNameField)\"\(filename)\"\(lineBreak)")
+                body.append("\(type): \(mimeType)\(lineBreak + lineBreak)")
                 body.append(data)
-                body.append("\r\n")
+                body.append("\(lineBreak)")
             }else if value is [String: String] {
                 var body1 = Data()
-                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
+                body.append("\(fromData); \(nameKeyField)\"\(key)\"\(lineBreak + lineBreak)")
                 for (keyy, valuee) in (value as? [String: String])! {
                     body1.append("--\(boundary)\r\n")
-                    body1.append("Content-Disposition: form-data; name=\"\(keyy)\"\r\n\r\n")
-                    body1.append("\(valuee)\r\n")
+                    body1.append("\(fromData); \(nameKeyField)\"\(keyy)\"\(lineBreak + lineBreak)")
+                    body1.append("\(valuee)\(lineBreak)")
                 }
                 body.append(body1)
             } else if let dataValue = value as? URL {
                 let r = arc4random()
                 let filename = "\(r).pdf" //MARK:  put your imagename in key
-                let data: Data = try! Data(contentsOf: dataValue)
-                body.append("--\(boundary)\r\n")
-                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-                body.append("Content-Type: \(mimeType)\r\n\r\n")
+                let data: Data = try Data(contentsOf: dataValue)
+                body.append("--\(boundary)\(lineBreak)")
+                body.append("\(fromData); \(nameKeyField)\"\(key)\"; \(fileNameField)\"\(filename)\"\(lineBreak)")
+                body.append("\(type): \(mimeType)\(lineBreak + lineBreak)")
                 body.append(data)
-                body.append("\r\n")
+                body.append("\(lineBreak)")
                 
             } else if let images = value as? [UIImage] {
                 for image in images {
                     let r = arc4random()
                     let filename = "image\(r).jpg" //MARK:  put your imagename in key
-                    let data: Data = image.jpegData(compressionQuality: 0.5)!
-                    body.append("--\(boundary)\r\n")
-                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-                    body.append("Content-Type: \(mimeType)\r\n\r\n")
+                    guard let data = image.jpegData(compressionQuality: 0.5) else {
+                        throw NSError(domain: "ImageConversion", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to convert UIImage to Data"])
+                    }
+                    body.append("--\(boundary)\(lineBreak)")
+                    body.append("\(fromData); \(nameKeyField)\"\(key)\"; \(fileNameField)\"\(filename)\"\(lineBreak)")
+                    body.append("\(type): \(mimeType)\(lineBreak + lineBreak)")
                     body.append(data)
-                    body.append("\r\n")
+                    body.append("\(lineBreak)")
                 }
             }else if let videoData = value as? Data { //MARK:  it is Used for Video and pdf send to the server
                 let r = arc4random()
                 let filename = "\(key)\(r).mov" //MARK:  Put you image Name in key
                 let data : Data = videoData
-                body.append("--\(boundary)\r\n")
-                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-                body.append("Content-Type: \(mimeType)\r\n\r\n")
+                body.append("--\(boundary)\(lineBreak)")
+                body.append("\(fromData); \(nameKeyField)\"\(key)\"; \(fileNameField)\"\(filename)\"\(lineBreak)")
+                body.append("\(type): \(mimeType)\(lineBreak + lineBreak)")
                 body.append(data)
-                body.append("\r\n")
+                body.append("\(lineBreak)")
             } else if let multipleData = value as? [Data] { //MARK:  It is used for Multiple Data to api
                 for filedata in multipleData {
                     let r = arc4random()
                     let filename = "\(key)\(r).mov" //MARK:-  put your imagename in key
                     let data: Data = filedata
-                    body.append("--\(boundary)\r\n")
-                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
-                    body.append("Content-Type: \(mimeType)\r\n\r\n")
+                    body.append("--\(boundary)\(lineBreak)")
+                    body.append("\(fromData); \(nameKeyField)\"\(key)\"; \(fileNameField)\"\(filename)\"\(lineBreak)")
+                    body.append("\(type): \(mimeType)\(lineBreak + lineBreak)")
                     body.append(data)
-                    body.append("\r\n")
+                    body.append("\(lineBreak)")
                 }
             }
         }
-        body.append("--\(boundary)--\r\n")
+        body.append("--\(boundary)--\(lineBreak)")
         return body
     }
     
+//    //MARK:- Func for Create Body for multipart Api to append Video and images
+//    func createBody(parameters: [String: Any?], boundary: String, mimeType: String) throws -> Data {
+//        var body = Data()
+//        for (key, value) in parameters {
+//            if(value is String || value is NSString) {
+//                body.append("--\(boundary)\r\n")
+//                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
+//                body.append("\(value ?? "")\r\n")
+//            } else if let imagValue = value as? UIImage {
+//                let r = arc4random()
+//                let filename = "image\(r).jpg" //MARK:  put your imagename in key
+//                let data: Data = imagValue.jpegData(compressionQuality: 0.5)!
+//                body.append("--\(boundary)\r\n")
+//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
+//                body.append("Content-Type: \(mimeType)\r\n\r\n")
+//                body.append(data)
+//                body.append("\r\n")
+//            }else if value is [String: String] {
+//                var body1 = Data()
+//                body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n")
+//                for (keyy, valuee) in (value as? [String: String])! {
+//                    body1.append("--\(boundary)\r\n")
+//                    body1.append("Content-Disposition: form-data; name=\"\(keyy)\"\r\n\r\n")
+//                    body1.append("\(valuee)\r\n")
+//                }
+//                body.append(body1)
+//            } else if let dataValue = value as? URL {
+//                let r = arc4random()
+//                let filename = "\(r).pdf" //MARK:  put your imagename in key
+//                let data: Data = try! Data(contentsOf: dataValue)
+//                body.append("--\(boundary)\r\n")
+//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
+//                body.append("Content-Type: \(mimeType)\r\n\r\n")
+//                body.append(data)
+//                body.append("\r\n")
+//                
+//            } else if let images = value as? [UIImage] {
+//                for image in images {
+//                    let r = arc4random()
+//                    let filename = "image\(r).jpg" //MARK:  put your imagename in key
+//                    let data: Data = image.jpegData(compressionQuality: 0.5)!
+//                    body.append("--\(boundary)\r\n")
+//                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
+//                    body.append("Content-Type: \(mimeType)\r\n\r\n")
+//                    body.append(data)
+//                    body.append("\r\n")
+//                }
+//            }else if let videoData = value as? Data { //MARK:  it is Used for Video and pdf send to the server
+//                let r = arc4random()
+//                let filename = "\(key)\(r).mov" //MARK:  Put you image Name in key
+//                let data : Data = videoData
+//                body.append("--\(boundary)\r\n")
+//                body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
+//                body.append("Content-Type: \(mimeType)\r\n\r\n")
+//                body.append(data)
+//                body.append("\r\n")
+//            } else if let multipleData = value as? [Data] { //MARK:  It is used for Multiple Data to api
+//                for filedata in multipleData {
+//                    let r = arc4random()
+//                    let filename = "\(key)\(r).mov" //MARK:-  put your imagename in key
+//                    let data: Data = filedata
+//                    body.append("--\(boundary)\r\n")
+//                    body.append("Content-Disposition: form-data; name=\"\(key)\"; filename=\"\(filename)\"\r\n")
+//                    body.append("Content-Type: \(mimeType)\r\n\r\n")
+//                    body.append(data)
+//                    body.append("\r\n")
+//                }
+//            }
+//        }
+//        body.append("--\(boundary)--\r\n")
+//        return body
+//    }
     
 }

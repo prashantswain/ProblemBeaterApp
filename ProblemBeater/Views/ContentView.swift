@@ -27,20 +27,23 @@ struct ContentView: View {
                     navManager.navigateToRoot()
                 }
             }
+            .overlay(
+                CustomValidationAlertView() // Alert View
+            )
             .navigationDestination(for: NavigationScreen.self) { screen in
                 switch screen {
-                case .home:
-                    HomeScreen()
-                case .login:
-                    LoginView()
+                case .home(let showAlert):
+                    let viewModel = HomeScreenViewModel(showLoginToast: showAlert, wecomeMessage: "Login Successfully")
+                    HomeScreen(viewModel: viewModel)
+                case .login(let showToast, let toastMessage):
+                    let viewModel = LoginViewModel(showToast: showToast, toastMessage: toastMessage)
+                    LoginView(viewModel: viewModel)
                 case .signUp:
                     RegistrationView()
                 case .forgotPassword:
                     ForgotPasswordView()
                 case .walkThrough:
                     WalkthroughScreen()
-                default:
-                    EmptyView()
                 }
             }
         }

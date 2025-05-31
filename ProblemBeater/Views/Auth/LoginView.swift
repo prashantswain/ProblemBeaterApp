@@ -9,18 +9,18 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var navManager: NavigationManager
-    @State private var email: String = ""
-    @State private var password: String = ""
-    
+    @State var showSuccessToast = false
     @ObservedObject var viewModel = LoginViewModel()
+    
     var body: some View {
             VStack(alignment: .leading) {
                 Text("Let's Sign In.!")
                     .font(.system(size: 32, design: .rounded))
                     .bold()
                 VStack(alignment: .leading, spacing: 16) {
-                    TextFieldWithImage(placeHolderText: "Email", text: $email, showIcon: true, iconName: "envelope.fill")
-                    CustomSecureTextField(placeHolderText: "Password", text: $password)
+                    TextFieldWithImage(placeHolderText: "Email", text: $viewModel.email, showIcon: true, iconName: "envelope.fill")
+                        .keyboardType(.emailAddress)
+                    CustomSecureTextField(placeHolderText: "Password", text: $viewModel.password)
                     Button {
                         // Forgot Password Action
                         DispatchQueue.main.async {
@@ -35,8 +35,7 @@ struct LoginView: View {
                 AppButton(text: "Sign In") {
                     // Sign In Action
                     Task {
-                        await viewModel.fetchData()
-                        await navManager.goToHome()
+                        await viewModel.login()
                     }
                 }
                 .padding(.top, 30)
@@ -59,8 +58,21 @@ struct LoginView: View {
             .navigationBarHidden(true)
             .onAppear {
                 print("Login path :\(navManager.path)")
+                if viewModel.showToast {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.showSuccessToast = true
+                    }
+                }
             }
             .spinnerOverlay(isLoading: viewModel.isLoading)
+            .onChange(of: viewModel.isLoggedInSuucess) { oldValue, newValue in
+                if newValue {
+                    Task {
+                        await navManager.goToHome(showWelcomeAlert: true)
+                    }
+                }
+            }
+            .showToasMessage(isShowing: $showSuccessToast, message: viewModel.toastMessage)
     }
 }
 

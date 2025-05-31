@@ -7,44 +7,42 @@
 import SwiftUI
 
 enum NavigationScreen: Hashable {
-    case login
+    case login(Bool, String)
     case signUp
     case forgotPassword
-    case home
-    case demo
+    case home(Bool)
     case walkThrough
 }
 
 @MainActor
 class NavigationManager: ObservableObject {
+    @EnvironmentObject var userDetail: SharedUserDetail
     @Published var path = NavigationPath()
     
-    func goToHome() async {
-        //        try? await Task.sleep(nanoseconds: 50_000_000)
+    func goToHome(showWelcomeAlert: Bool = false) async {
         appUserDefault.isUserLoggedIn = true
         var transaction = Transaction(animation: .none)
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             path = NavigationPath()
-            self.path.append(NavigationScreen.home)
+            self.path.append(NavigationScreen.home(showWelcomeAlert))
         }
     }
     
-    func goToLogin() async {
+    func goToLogin(showToastMessage: Bool = true, message: String) async {
         print("goToLogin called. Current path: \(path)")
         var transaction = Transaction(animation: .none)
         transaction.disablesAnimations = true
         withTransaction(transaction) {
             path = NavigationPath()
-            self.path.append(NavigationScreen.login)
+            self.path.append(NavigationScreen.login(showToastMessage, message))
         }
-        //        try? await Task.sleep(nanoseconds: 50_000_000)
         print("goToLogin appended login screen. : \(path)")
     }
     
     func logout() {
         Task {
-            await goToLogin()
+            await goToLogin(showToastMessage: true, message: "Logut Successfully")
         }
     }
     func navigateToRoot () {
@@ -62,7 +60,7 @@ class NavigationManager: ObservableObject {
             }
         } else {
             Task {
-                await goToLogin()
+                await goToLogin(showToastMessage: false, message: "")
             }
         }
     }

@@ -10,10 +10,12 @@ import SwiftUI
 @main
 struct ProblemBeaterApp: App {
     @StateObject var navManager: NavigationManager = NavigationManager()
+    @StateObject private var userDetails: SharedUserDetail = SharedUserDetail()
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(navManager)
+                .environmentObject(userDetails)
         }
     }
 }

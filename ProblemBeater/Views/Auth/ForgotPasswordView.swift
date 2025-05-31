@@ -24,14 +24,13 @@ struct ForgotPasswordView: View {
                     .font(.system(size: 32, design: .rounded))
                     .bold()
                 VStack(spacing: 16) {
-                    TextFieldWithImage(placeHolderText: "Email", text: $email, showIcon: true, iconName: "envelope.fill")
-                    CustomSecureTextField(placeHolderText: "Password", text: $password)
-                    CustomSecureTextField(placeHolderText: " Confirm Password", text: $confirmPassword)
+                    TextFieldWithImage(placeHolderText: "Email", text: $viewModel.email, showIcon: true, iconName: "envelope.fill")
+                    CustomSecureTextField(placeHolderText: "Password", text: $viewModel.password)
+                    CustomSecureTextField(placeHolderText: " Confirm Password", text: $viewModel.confirmPassword)
                 }
                 AppButton(text: "Save") {
                     Task {
                         await viewModel.fetchData()
-                        await navManager.goToLogin()
                     }
                 }
                 .padding(.top, 30)
@@ -42,6 +41,13 @@ struct ForgotPasswordView: View {
         }
         .spinnerOverlay(isLoading: viewModel.isLoading)
         .navigationBarHidden(true)
+        .onChange(of: viewModel.passwordChanged) { _, newValue in
+            if newValue {
+                Task {
+                    await navManager.goToLogin(showToastMessage: true, message: "Password Reset Successfully! Try Login")
+                }
+            }
+        }
     }
 }
 
