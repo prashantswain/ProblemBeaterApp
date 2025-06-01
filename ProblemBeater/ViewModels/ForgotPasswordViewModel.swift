@@ -27,7 +27,7 @@ class ForgotPasswordViewModel: ObservableObject {
             ValidationErrorManager.shared.show(error: .inValidEmail)
             return false
         } else if password.stringByTrimmingWhiteSpace().isEmpty {
-            ValidationErrorManager.shared.show(error: .emptyNewPaasword)
+            ValidationErrorManager.shared.show(error: .emptyNewPassword)
             return false
         } else if password.isPasswordValidate() {
             ValidationErrorManager.shared.show(error: .validPassword)
@@ -43,12 +43,20 @@ class ForgotPasswordViewModel: ObservableObject {
         return true
     }
     
-    func fetchData() async {
-//        guard validationField() else { return }
+    func forgotPassword() async {
         isLoading = true
-            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
-        isLoading = false
-            self.data = "Result from API"
-        passwordChanged = true
+        defer {isLoading = false}
+        guard validationField() else { return }
+        let requestParameter = ForgotPasswordRequest(email: email, password: password)
+        ServiceManager.shared.postRequest(endpoint: .forgotPassword, requestParameter: requestParameter) { (result: Result<SucessMessage, APIError>) in
+            switch result {
+            case .success( _):
+                DispatchQueue.main.async {
+                    self.passwordChanged = true
+            }
+            case .failure(let error):
+                ValidationErrorManager.shared.show(error: .customError(error.errorDescription ?? ""))
+            }
+        }
     }
 }

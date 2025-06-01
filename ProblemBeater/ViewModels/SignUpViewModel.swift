@@ -24,10 +24,8 @@ class SignUpViewModel: ObservableObject {
     @Published var data: String?
     @Published var isLoading = false
     
-    @Published var loginSuccess = false
+    @Published var signUpSuccess = false
     @Published var classes: [ClassItem]?
-    var errorMessage: String?
-    @Published var showError = false
     
     func fetchData() async {
         isLoading = true
@@ -41,10 +39,11 @@ class SignUpViewModel: ObservableObject {
         ServiceManager.shared.getRequest(endpoint: .getAllClasses) { (result: Result<ClassesResponse, APIError>) in
             switch result {
             case .success(let classResponce):
-                self.classes = classResponce.data
+                DispatchQueue.main.async {
+                    self.classes = classResponce.data
+                }
             case .failure(let error):
-                self.errorMessage = error.errorDescription
-                self.showError = true
+                ValidationErrorManager.shared.show(error: .customError(error.errorDescription ?? ""))
             }
         }
     }
@@ -86,7 +85,7 @@ class SignUpViewModel: ObservableObject {
         } else if age.stringByTrimmingWhiteSpace().isEmpty {
             ValidationErrorManager.shared.show(error: .emptyAge)
             return false
-        } else if selectedClass.stringByTrimmingWhiteSpace().isEmpty {
+        } else if getClassId() == 0 {
             ValidationErrorManager.shared.show(error: .emptyClass)
             return false
         }
@@ -99,29 +98,29 @@ class SignUpViewModel: ObservableObject {
         isLoading = true
         defer {isLoading = false}
         let parameters : [String : Any] = [
-            ApiParameter.name.key: "Bhupesh2",
-            ApiParameter.email.key: "bhupesh2@gmail.com",
-            ApiParameter.mobile.key: "9876545678",
-            ApiParameter.age.key: "23",
-            ApiParameter.gender.key: "Male",
-            ApiParameter.password.key: "12345678",
-            ApiParameter.classId.key: "4",
-            ApiParameter.profilePic.key: UIImage(systemName: "person.circle")!
+            ApiParameter.name.key: name,
+            ApiParameter.email.key: email,
+            ApiParameter.mobile.key: String.toString(mobile),
+            ApiParameter.age.key: String.toString(age),
+            ApiParameter.gender.key: selectedGender,
+            ApiParameter.password.key: password,
+            ApiParameter.classId.key: String.toString(getClassId()),
+            ApiParameter.profilePic.key: selectedImage ?? UIImage()
         ]
         
         ServiceManager.shared.postMultipartRequest(endpoint: .signUp, requestParameter: parameters) { (result: Result<SignUpResponse, APIError>) in
             switch result {
-            case .success(let loginResponse):
-                self.showMessage(message: loginResponse.message)
-                self.errorMessage = loginResponse.message
-                self.showError = true
+            case .success( _):
+                DispatchQueue.main.async {
+                    self.signUpSuccess = true
+                }
             case .failure(let error):
-                self.showMessage(message: error.errorDescription ?? "")
+                ValidationErrorManager.shared.show(error: .customError(error.errorDescription ?? ""))
             }
         }
     }
     
-    func showMessage(message: String) {
-        print(message)
+    func getClassId() -> Int {
+        return self.classes?.filter{$0.name == selectedClass}.first?.id ?? 0
     }
 }

@@ -14,7 +14,7 @@ struct HomeScreen: View {
     @State var showLoginSuccessToast = false
     var body: some View {
         VStack {
-            Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+            Text(userDetail.user?.name ?? "")
             AppButton(text: "Logout") {
                 Task {
                     await viewModel.fetchData()

@@ -16,6 +16,7 @@ struct BackButton: View {
         Button {
             onClick?()
             if !navManager.path.isEmpty {
+//                print(navManager.path.removeLast())
                 navManager.path.removeLast()
             }
         } label: {

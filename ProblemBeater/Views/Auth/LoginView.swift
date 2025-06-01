@@ -10,7 +10,11 @@ import SwiftUI
 struct LoginView: View {
     @EnvironmentObject var navManager: NavigationManager
     @State var showSuccessToast = false
-    @ObservedObject var viewModel = LoginViewModel()
+    @StateObject var viewModel: LoginViewModel
+    
+    init(viewModel: LoginViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     var body: some View {
             VStack(alignment: .leading) {
@@ -24,7 +28,8 @@ struct LoginView: View {
                     Button {
                         // Forgot Password Action
                         DispatchQueue.main.async {
-                            navManager.path.append(NavigationScreen.forgotPassword)
+//                            navManager.path.append(AnyNavigate(ForgotPasswordNavigation()))
+                            navManager.navigate(to: ForgotPasswordNavigation())
                         }
                     } label: {
                         Text("Forgot Password?")
@@ -45,7 +50,7 @@ struct LoginView: View {
                         .font(.system(size: 16, design: .rounded))
                     Button {
                         // Forgot Password Action
-                            navManager.path.append(NavigationScreen.signUp)
+                        navManager.path.append(AnyNavigate(SignUpNavigation()))
                     } label: {
                         Text("Sign Up")
                             .font(.system(size: 16, design: .rounded))
@@ -58,9 +63,11 @@ struct LoginView: View {
             .navigationBarHidden(true)
             .onAppear {
                 print("Login path :\(navManager.path)")
-                if viewModel.showToast {
+                print("Panchal failed")
+            if viewModel.showToast {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.showSuccessToast = true
+                        self.viewModel.showToast.toggle()
                     }
                 }
             }
@@ -68,7 +75,7 @@ struct LoginView: View {
             .onChange(of: viewModel.isLoggedInSuucess) { oldValue, newValue in
                 if newValue {
                     Task {
-                        await navManager.goToHome(showWelcomeAlert: true)
+                        await navManager.goToHome(showToastMessage: true, message: "Login Successfully")
                     }
                 }
             }
@@ -77,5 +84,5 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView()
+    LoginView(viewModel: LoginViewModel())
 }

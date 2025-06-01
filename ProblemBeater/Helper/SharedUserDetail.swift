@@ -8,7 +8,7 @@ import SwiftUI
 
 @MainActor
 class SharedUserDetail: ObservableObject {
-    @Published private var user: UserData?
+    @Published var user: UserData?
     @AppStorage("appInstalled") var isAppInstalled: Bool = false
     @AppStorage("userLoggedIn") var isUserLoggedIn: Bool = false
     

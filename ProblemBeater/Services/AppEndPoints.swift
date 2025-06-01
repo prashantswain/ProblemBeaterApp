@@ -45,6 +45,7 @@ enum EndPoint: EndPointConfig {
     case getAllClasses
     case login
     case signUp
+    case forgotPassword
     
     var path: String {
         switch self {
@@ -54,6 +55,8 @@ enum EndPoint: EndPointConfig {
             return "auth/login"
         case .signUp:
             return "user/createProfile"
+        case .forgotPassword:
+            return "user/forgotPassword"
         default:
             return ""
         }

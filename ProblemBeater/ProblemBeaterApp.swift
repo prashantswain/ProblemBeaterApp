@@ -9,8 +9,12 @@ import SwiftUI
 
 @main
 struct ProblemBeaterApp: App {
-    @StateObject var navManager: NavigationManager = NavigationManager()
-    @StateObject private var userDetails: SharedUserDetail = SharedUserDetail()
+    @StateObject var navManager: NavigationManager
+    @StateObject var userDetails: SharedUserDetail
+    init() {
+        _navManager = StateObject(wrappedValue: NavigationManager())
+        _userDetails = StateObject(wrappedValue: SharedUserDetail())
+    }
     var body: some Scene {
         WindowGroup {
             ContentView()

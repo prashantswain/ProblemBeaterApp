@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var userDetail: SharedUserDetail
     @State private var showSplash = true
     var body: some View {
         NavigationStack(path: $navManager.path) {
@@ -23,6 +24,7 @@ struct ContentView: View {
             }
             .onAppear {
                 appUserDefault.navManager = navManager
+                appUserDefault.userDetail = userDetail
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                     showSplash = false
                     navManager.navigateToRoot()
@@ -31,21 +33,10 @@ struct ContentView: View {
             .overlay(
                 CustomValidationAlertView() // Alert View
             )
-            .navigationDestination(for: NavigationScreen.self) { screen in
-                switch screen {
-                case .home(let showAlert):
-                    let viewModel = HomeScreenViewModel(showLoginToast: showAlert, wecomeMessage: "Login Successfully")
-                    HomeScreen(viewModel: viewModel)
-                case .login(let showToast, let toastMessage):
-                    let viewModel = LoginViewModel(showToast: showToast, toastMessage: toastMessage)
-                    LoginView(viewModel: viewModel)
-                case .signUp:
-                    RegistrationView()
-                case .forgotPassword:
-                    ForgotPasswordView()
-                case .walkThrough:
-                    WalkthroughScreen()
-                }
+            .navigationDestination(for: AnyNavigate.self) { nav in
+                print("Check navigation")
+                return nav.destinationView()
+                
             }
         }
     }

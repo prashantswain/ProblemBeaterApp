@@ -17,30 +17,74 @@ class ValidationErrorManager: ObservableObject {
     private init() {}
     
     func show(error: ValidationError) {
-        message = error.rawValue
-        showError = true
+        DispatchQueue.main.async {
+            self.message = error.errorDescription
+            self.showError = true
+        }
     }
     
     func clear() {
-        showError = false
-        message = nil
+        DispatchQueue.main.async {
+            self.showError = false
+            self.message = nil
+        }
     }
 }
 
-enum ValidationError: String {
-    case emptyEmail = "Kindly enter the email address."
-    case inValidEmail = "Kindly provide a valid email address."
-    case emptyPassword = "Kindly enter the password."
-    case validPassword = "Your password must be at least 8 characters with 1 upper case and 1 lower case character, 1 number and 1 spacial character."
-    case emptyName = "Kindly enter the name."
-    case emptyMobile = "Kindly provide your mobile number."
-    case invalidMobile = "Kindly provide a valid mobile number."
-    case emptyConfirmPass = "Kindly enter the confirm password."
-    case confirmPasswordNotMatch = "Please check your confirm password do not match."
-    case emptyNewPaasword = "Kindly enter the new password."
-    case emptyGender = "Kindly select gender."
-    case emptyAge = "Kindly enter your age."
-    case validAge = "Kindly enter your valid age."
-    case emptyClass = "Kindly select your class."
-    case selectProfilePicture = "Kindly select the profile picture."
+enum ValidationError {
+    case emptyEmail
+    case inValidEmail
+    case emptyPassword
+    case validPassword
+    case emptyName
+    case emptyMobile
+    case invalidMobile
+    case emptyConfirmPass
+    case confirmPasswordNotMatch
+    case emptyNewPassword
+    case emptyGender
+    case emptyAge
+    case validAge
+    case emptyClass
+    case selectProfilePicture
+    case customError(String)
+}
+
+extension ValidationError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .emptyEmail:
+            return "Kindly enter the email address."
+        case .inValidEmail:
+            return "Kindly provide a valid email address."
+        case .emptyPassword:
+            return "Kindly enter the password."
+        case .validPassword:
+            return "Your password must be at least 8 characters with 1 upper case and 1 lower case character, 1 number and 1 special character."
+        case .emptyName:
+            return "Kindly enter the name."
+        case .emptyMobile:
+            return "Kindly provide your mobile number."
+        case .invalidMobile:
+            return "Kindly provide a valid mobile number."
+        case .emptyConfirmPass:
+            return "Kindly enter the confirm password."
+        case .confirmPasswordNotMatch:
+            return "Please check your confirm password do not match."
+        case .emptyNewPassword:
+            return "Kindly enter the new password."
+        case .emptyGender:
+            return "Kindly select gender."
+        case .emptyAge:
+            return "Kindly enter your age."
+        case .validAge:
+            return "Kindly enter your valid age."
+        case .emptyClass:
+            return "Kindly select your class."
+        case .selectProfilePicture:
+            return "Kindly select the profile picture."
+        case .customError(let message):
+            return message
+        }
+    }
 }

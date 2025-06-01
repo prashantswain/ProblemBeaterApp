@@ -5,6 +5,7 @@
 //  Created by Prashant Swain on 28/05/25.
 //
 import Combine
+import Foundation
 
 @MainActor
 class LoginViewModel: ObservableObject {
@@ -47,14 +48,17 @@ class LoginViewModel: ObservableObject {
         isLoading = true
         defer {isLoading = false}
         guard ValidationField() else { return }
-        let requestParameter = LoginRequest(username: "bhupesh2@gmail.com", password: "87654321@Abc")
+        let requestParameter = LoginRequest(username: email, password: password)
         ServiceManager.shared.postRequest(endpoint: .login, requestParameter: requestParameter) { (result: Result<LoginResponse, APIError>) in
             switch result {
             case .success(let loginResponse):
-                self.showMessage(message: loginResponse.message)
-                self.isLoggedInSuucess = true
+                appUserDefault.saveUserToUserDefaults(loginResponse.data)
+                appUserDefault.accessToken = loginResponse.authToken
+                DispatchQueue.main.async {
+                    self.isLoggedInSuucess = true
+            }
             case .failure(let error):
-                self.showMessage(message: error.errorDescription ?? "")
+                ValidationErrorManager.shared.show(error: .customError(error.errorDescription ?? ""))
             }
         }
     }

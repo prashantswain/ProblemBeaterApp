@@ -8,18 +8,21 @@ import SwiftUI
 
 class AppUserDefault {
     static let shared = AppUserDefault()
-    
     private init () {}
     var navManager: NavigationManager?
+    var userDetail: SharedUserDetail?
     @AppStorage("appInstalled") var isAppInstalled: Bool = false
     @AppStorage("userLoggedIn") var isUserLoggedIn: Bool = false
     @AppStorage("accessToken") var accessToken: String = ""
     
     let userDataKey = "userData"
     
-    func saveUserToUserDefaults(_ user: UserData) {
+    @MainActor func saveUserToUserDefaults(_ user: UserData) {
         if let encoded = try? JSONEncoder().encode(user) {
             UserDefaults.standard.set(encoded, forKey: userDataKey)
+            DispatchQueue.main.async { [weak self] in
+                self?.userDetail?.user = user
+            }
         }
     }
     

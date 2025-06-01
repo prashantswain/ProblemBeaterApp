@@ -8,6 +8,10 @@
 import Foundation
 import SwiftUI
 
+struct ErrorResponse: Decodable {
+    let error: String
+}
+
 class ServiceManager {
     static let shared = ServiceManager()
     private init() {}
@@ -18,7 +22,7 @@ class ServiceManager {
         headers: [String: String]? = nil,
         body: Data? = nil,
         responseType: T.Type
-    ) async throws -> (data: T?, statusCode: Int) {
+    ) async throws -> (data: T?, statusCode: Int, errorMessage: String?) {
         guard let url = url else {
             throw APIError.invalidURL
         }
@@ -30,17 +34,18 @@ class ServiceManager {
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse,
-                  200..<300 ~= httpResponse.statusCode  else {
-                throw APIError.invalidResponse
-            }
+            guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
             
-            if httpResponse.statusCode == 401 {
-                return (nil, httpResponse.statusCode)
+            guard 200..<300 ~= httpResponse.statusCode  else {
+                if 401..<410 ~= httpResponse.statusCode {
+                    let errorDecoded = try JSONDecoder().decode(ErrorResponse.self, from: data)
+                    return (nil, httpResponse.statusCode, errorDecoded.error)
+                } else {
+                    return (nil, httpResponse.statusCode, nil)
+                }
             }
-            
             do {
-                return  (try JSONDecoder().decode(T.self, from: data), httpResponse.statusCode)
+                return  (try JSONDecoder().decode(T.self, from: data), httpResponse.statusCode, nil)
             } catch {
                 throw APIError.decodingError(error)
             }
@@ -62,10 +67,13 @@ class ServiceManager {
 
         Task {
             do {
-                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
+                let (data, statusCode, errorMessage) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
                 if statusCode == 401 {
                     await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
+                    return
+                } else if 400..<410 ~= statusCode {
+                    completionHandler(.failure(.customError(errorMessage ?? "")))
                     return
                 }
                 else {
@@ -92,12 +100,14 @@ class ServiceManager {
         ]
         let method :httpMethod = .get
         do {
-            let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
+            let (data, statusCode, errorMessage) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, responseType: T.self)
             if statusCode == 401 {
                 Task{
                     await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                 }
                 return (nil, .authenticationFailed)
+            } else if 400..<410 ~= statusCode {
+                return (nil, .customError(errorMessage ?? ""))
             }
             else {
                 return (data, nil)
@@ -124,10 +134,13 @@ class ServiceManager {
 
         Task {
             do {
-                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: body, responseType: T.self)
+                let (data, statusCode, errorMessage) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: body, responseType: T.self)
                 if statusCode == 401 {
                     await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
+                    return
+                } else if 400..<410 ~= statusCode {
+                    completionHandler(.failure(.customError(errorMessage ?? "")))
                     return
                 }
                 else {
@@ -162,10 +175,13 @@ class ServiceManager {
         }
         Task {
             do {
-                let (data, statusCode) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: bodyData, responseType: T.self)
+                let (data, statusCode, errorMessage) = try await request(url: endpoint.url, method: method.rawValue, headers: headers, body: bodyData, responseType: T.self)
                 if statusCode == 401 {
                     await appUserDefault.navManager?.goToLogin(showToastMessage: false, message: "")
                     completionHandler(.failure(.authenticationFailed))
+                    return
+                } else if 400..<410 ~= statusCode {
+                    completionHandler(.failure(.customError(errorMessage ?? "")))
                     return
                 }
                 else {

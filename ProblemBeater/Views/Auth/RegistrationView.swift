@@ -96,9 +96,6 @@ struct RegistrationView: View {
                         AppButton(text: "Sign Up") {
                             Task {
                                 await viewModel.signUp()
-                                if viewModel.loginSuccess {
-                                    await navManager.goToLogin(showToastMessage: true, message: "Registration Successful! Login to start you Journey")
-                                }
                             }
                         }
                         .padding(.top, 30)
@@ -117,12 +114,12 @@ struct RegistrationView: View {
         .task {
             viewModel.fetClasses()
         }
-        .alert(isPresented: $viewModel.showError) {
-            Alert(
-                title: Text("Error"),
-                message: Text(viewModel.errorMessage ?? ""),
-                dismissButton: .default(Text("OK"))
-            )
+        .onChange(of: viewModel.signUpSuccess) { _, newValue in
+            if newValue {
+                Task {
+                    await navManager.goToLogin(showToastMessage: true, message: "Registration Successful! Login to start you Journey")
+                }
+            }
         }
     }
 }

@@ -9,9 +9,6 @@ import SwiftUI
 
 struct ForgotPasswordView: View {
     @EnvironmentObject var navManager: NavigationManager
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var confirmPassword: String = ""
     
     @ObservedObject var viewModel = ForgotPasswordViewModel()
     var body: some View {
@@ -30,7 +27,7 @@ struct ForgotPasswordView: View {
                 }
                 AppButton(text: "Save") {
                     Task {
-                        await viewModel.fetchData()
+                        await viewModel.forgotPassword()
                     }
                 }
                 .padding(.top, 30)
