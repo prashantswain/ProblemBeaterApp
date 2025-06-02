@@ -16,6 +16,6 @@ struct HomeScreenNavigation: Navigate {
 
     func destinationView() -> AnyView {
         let viewModel = HomeScreenViewModel(showLoginToast: showToast, wecomeMessage: toastMessage)
-        return AnyView(HomeScreen(viewModel: viewModel))
+        return AnyView(AppDrawerContainer(viewModel: viewModel))
     }
 }

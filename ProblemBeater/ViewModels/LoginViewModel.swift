@@ -13,13 +13,12 @@ class LoginViewModel: ObservableObject {
     // TextField
     @Published var email: String = ""
     @Published var password: String = ""
-    
-    @Published var data: String?
-    @Published var isLoading = false
+
     @Published var isLoggedInSuucess: Bool = false
-    @Published var validationError: String = ""
     @Published var showToast: Bool = false
     var toastMessage = ""
+    
+    var loadingState: LoadingState?
     
     init(showToast: Bool = false, toastMessage: String = "") {
         self.showToast = showToast
@@ -45,11 +44,14 @@ class LoginViewModel: ObservableObject {
     }
     
     func login() async {
-        isLoading = true
-        defer {isLoading = false}
+        await MainActor.run { self.loadingState?.isLoading = true }
+        try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
         guard ValidationField() else { return }
         let requestParameter = LoginRequest(username: email, password: password)
         ServiceManager.shared.postRequest(endpoint: .login, requestParameter: requestParameter) { (result: Result<LoginResponse, APIError>) in
+            Task {
+                await MainActor.run { self.loadingState?.isLoading = false }
+            }
             switch result {
             case .success(let loginResponse):
                 appUserDefault.saveUserToUserDefaults(loginResponse.data)

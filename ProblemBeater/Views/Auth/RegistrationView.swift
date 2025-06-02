@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RegistrationView: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var loadingState: LoadingState
     @State private var showImagePicker = false
     @FocusState private var isFocused: Bool
     
@@ -94,6 +95,7 @@ struct RegistrationView: View {
                             .padding(EdgeInsets(top: -4, leading: 10, bottom: 0, trailing: 0))
                         }
                         AppButton(text: "Sign Up") {
+                            viewModel.loadingState = loadingState
                             Task {
                                 await viewModel.signUp()
                             }
@@ -109,10 +111,10 @@ struct RegistrationView: View {
             }
             .scrollIndicators(.hidden)
         }
-        .spinnerOverlay(isLoading: viewModel.isLoading)
+        .spinnerOverlay(isLoading: loadingState.isLoading)
         .navigationBarHidden(true)
         .task {
-            viewModel.fetClasses()
+            await viewModel.fetClasses()
         }
         .onChange(of: viewModel.signUpSuccess) { _, newValue in
             if newValue {

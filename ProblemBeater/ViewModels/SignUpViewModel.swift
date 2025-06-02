@@ -21,22 +21,19 @@ class SignUpViewModel: ObservableObject {
     @Published var selectedClass: String = ""
     @Published var selectedImage: UIImage?
     
-    @Published var data: String?
-    @Published var isLoading = false
-    
     @Published var signUpSuccess = false
     @Published var classes: [ClassItem]?
     
-    func fetchData() async {
-        isLoading = true
+    var loadingState: LoadingState?
+    
+    
+    func fetClasses() async {
+        await MainActor.run { self.loadingState?.isLoading = true }
         try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
-        isLoading = false
-        self.data = "Result from API"
-    }
-    
-    
-    func fetClasses() {
         ServiceManager.shared.getRequest(endpoint: .getAllClasses) { (result: Result<ClassesResponse, APIError>) in
+            Task {
+                await MainActor.run { self.loadingState?.isLoading = false }
+            }
             switch result {
             case .success(let classResponce):
                 DispatchQueue.main.async {
@@ -95,8 +92,8 @@ class SignUpViewModel: ObservableObject {
     
     func signUp() async {
         guard validationField() else { return }
-        isLoading = true
-        defer {isLoading = false}
+        await MainActor.run { self.loadingState?.isLoading = true }
+        try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
         let parameters : [String : Any] = [
             ApiParameter.name.key: name,
             ApiParameter.email.key: email,
@@ -109,6 +106,9 @@ class SignUpViewModel: ObservableObject {
         ]
         
         ServiceManager.shared.postMultipartRequest(endpoint: .signUp, requestParameter: parameters) { (result: Result<SignUpResponse, APIError>) in
+            Task {
+                await MainActor.run { self.loadingState?.isLoading = false }
+            }
             switch result {
             case .success( _):
                 DispatchQueue.main.async {

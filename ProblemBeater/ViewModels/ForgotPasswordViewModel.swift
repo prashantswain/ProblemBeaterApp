@@ -10,14 +10,13 @@ import SwiftUI
 
 @MainActor
 class ForgotPasswordViewModel: ObservableObject {
-    @Published var data: String?
-    @Published var isLoading = false
     // TextField
     @Published var email: String = ""
     @Published var password: String = ""
     @Published var confirmPassword: String = ""
     @Published var passwordChanged = false
     
+    var loadingState: LoadingState?
     
     func validationField() -> Bool {
         if email.stringByTrimmingWhiteSpace().isEmpty {
@@ -44,11 +43,14 @@ class ForgotPasswordViewModel: ObservableObject {
     }
     
     func forgotPassword() async {
-        isLoading = true
-        defer {isLoading = false}
+        await MainActor.run { self.loadingState?.isLoading = true }
+        try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
         guard validationField() else { return }
         let requestParameter = ForgotPasswordRequest(email: email, password: password)
         ServiceManager.shared.postRequest(endpoint: .forgotPassword, requestParameter: requestParameter) { (result: Result<SucessMessage, APIError>) in
+            Task {
+                await MainActor.run { self.loadingState?.isLoading = false }
+            }
             switch result {
             case .success( _):
                 DispatchQueue.main.async {

@@ -10,9 +10,7 @@ import SwiftUI
 
 @MainActor
 class HomeScreenViewModel: ObservableObject {
-    @Published var data: String?
-    @Published var isLoading = false
-    @Published var logoutSucess = false
+    
     @Published var showLoginToast = false
     var welcomeMessage = ""
     
@@ -20,13 +18,6 @@ class HomeScreenViewModel: ObservableObject {
         self.showLoginToast = showLoginToast
         self.welcomeMessage = wecomeMessage
     }
-
-    func fetchData() async {
-        isLoading = true
-            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
-        isLoading = false
-        logoutSucess = true
-            self.data = "Result from API"
-    }
+    
 }
 

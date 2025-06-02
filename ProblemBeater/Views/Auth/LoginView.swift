@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var loadingState: LoadingState
     @State var showSuccessToast = false
     @StateObject var viewModel: LoginViewModel
     
@@ -39,6 +40,7 @@ struct LoginView: View {
                 }
                 AppButton(text: "Sign In") {
                     // Sign In Action
+                    viewModel.loadingState = loadingState
                     Task {
                         await viewModel.login()
                     }
@@ -71,7 +73,7 @@ struct LoginView: View {
                     }
                 }
             }
-            .spinnerOverlay(isLoading: viewModel.isLoading)
+            .spinnerOverlay(isLoading: loadingState.isLoading)
             .onChange(of: viewModel.isLoggedInSuucess) { oldValue, newValue in
                 if newValue {
                     Task {

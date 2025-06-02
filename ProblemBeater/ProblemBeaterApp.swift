@@ -11,15 +11,18 @@ import SwiftUI
 struct ProblemBeaterApp: App {
     @StateObject var navManager: NavigationManager
     @StateObject var userDetails: SharedUserDetail
+    @StateObject var loadingState: LoadingState
     init() {
         _navManager = StateObject(wrappedValue: NavigationManager())
         _userDetails = StateObject(wrappedValue: SharedUserDetail())
+        _loadingState = StateObject(wrappedValue: LoadingState())
     }
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(navManager)
                 .environmentObject(userDetails)
+                .environmentObject(loadingState)
         }
     }
 }

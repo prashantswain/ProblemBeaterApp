@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ForgotPasswordView: View {
     @EnvironmentObject var navManager: NavigationManager
-    
+    @EnvironmentObject var loadingState: LoadingState
     @ObservedObject var viewModel = ForgotPasswordViewModel()
     var body: some View {
         HStack {
@@ -26,6 +26,7 @@ struct ForgotPasswordView: View {
                     CustomSecureTextField(placeHolderText: " Confirm Password", text: $viewModel.confirmPassword)
                 }
                 AppButton(text: "Save") {
+                    viewModel.loadingState = loadingState
                     Task {
                         await viewModel.forgotPassword()
                     }
@@ -36,7 +37,7 @@ struct ForgotPasswordView: View {
             .padding()
             Spacer()
         }
-        .spinnerOverlay(isLoading: viewModel.isLoading)
+        .spinnerOverlay(isLoading: loadingState.isLoading)
         .navigationBarHidden(true)
         .onChange(of: viewModel.passwordChanged) { _, newValue in
             if newValue {

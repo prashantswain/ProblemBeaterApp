@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var navManager: NavigationManager
     @EnvironmentObject var userDetail: SharedUserDetail
+    @EnvironmentObject var loadingState: LoadingState
     @State private var showSplash = true
     var body: some View {
         NavigationStack(path: $navManager.path) {

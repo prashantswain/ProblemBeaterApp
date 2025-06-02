@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+class LoadingState: ObservableObject {
+    @Published var isLoading: Bool = false
+}
+
 struct SpinnerLoaderView: View {
     @Binding var isAnimating: Bool
     @State private var rotation = false

@@ -7,15 +7,22 @@
 
 import SwiftUI
 
-struct HomeScreen: View {
+struct DashboardView: View {
     @EnvironmentObject var navManager: NavigationManager
     @EnvironmentObject var userDetail: SharedUserDetail
-    @ObservedObject var viewModel = HomeScreenViewModel()
+    @EnvironmentObject var loadingState: LoadingState
+    @StateObject var viewModel = DashBoardViewModel()
     @State var showLoginSuccessToast = false
+   
+    
+    init(viewModel:DashBoardViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     var body: some View {
         VStack {
             Text(userDetail.user?.name ?? "")
             AppButton(text: "Logout") {
+                viewModel.loadingState = loadingState
                 Task {
                     await viewModel.fetchData()
                 }
@@ -23,25 +30,17 @@ struct HomeScreen: View {
         }
         .padding()
         .navigationBarHidden(true)
-        .spinnerOverlay(isLoading: viewModel.isLoading)
-        .showToasMessage(isShowing: $showLoginSuccessToast, message: viewModel.welcomeMessage)
-
         .onChange(of: viewModel.logoutSucess) { oldValue, newValue in
             if newValue {
                 navManager.logout()
                 userDetail.isUserLoggedIn = false
             }
         }
-        .onAppear{
-            if viewModel.showLoginToast {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.showLoginSuccessToast = true
-                }
-            }
-        }
     }
 }
 
 #Preview {
-    HomeScreen()
+    DashboardView(viewModel: DashBoardViewModel())
+        .environmentObject(NavigationManager())
+        .environmentObject(SharedUserDetail())
 }
